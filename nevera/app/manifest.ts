@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Lo que se acabó en casa",
     start_url: "/",
     display: "standalone",
-    background_color: "#FBF7F0",
-    theme_color: "#FBF7F0",
+    background_color: "#FAFAF9",
+    theme_color: "#FAFAF9",
     icons: [
       { src: "/icon", sizes: "512x512", type: "image/png" },
       { src: "/apple-icon", sizes: "180x180", type: "image/png" },

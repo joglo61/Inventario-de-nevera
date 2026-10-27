@@ -8,14 +8,14 @@ export function Nevera({ lado }: { lado: number }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#1F4D3A",
+        background: "#1C1917",
       }}
     >
       <div
         style={{
           width: 44 * u,
           height: 68 * u,
-          background: "#FBF7F0",
+          background: "#FAFAF9",
           borderRadius: 8 * u,
           display: "flex",
           flexDirection: "column",
@@ -25,7 +25,7 @@ export function Nevera({ lado }: { lado: number }) {
         <div
           style={{
             height: 24 * u,
-            borderBottom: `${3 * u}px solid #1F4D3A`,
+            borderBottom: `${3 * u}px solid #A16207`,
             display: "flex",
           }}
         />
@@ -36,7 +36,7 @@ export function Nevera({ lado }: { lado: number }) {
             right: 6 * u,
             width: 3 * u,
             height: 9 * u,
-            background: "#1F4D3A",
+            background: "#A16207",
             borderRadius: 2 * u,
           }}
         />
@@ -47,7 +47,7 @@ export function Nevera({ lado }: { lado: number }) {
             right: 6 * u,
             width: 3 * u,
             height: 16 * u,
-            background: "#1F4D3A",
+            background: "#A16207",
             borderRadius: 2 * u,
           }}
         />

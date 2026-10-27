@@ -2,12 +2,16 @@
 
 import { useActionState } from "react";
 import { entrar } from "./actions";
+import { Icono } from "@/lib/iconos";
 
 export default function Login() {
   const [estado, accion, pendiente] = useActionState(entrar, { error: "" });
   return (
     <main className="login">
-      <div className="login-icono">🧊</div>
+      <div className="login-icono">
+        <Icono n="nevera" size={36} />
+      </div>
+      <p className="eyebrow">Inventario de casa</p>
       <h1>Nevera</h1>
       <p className="sub">Escribe el código de la casa</p>
       <form action={accion}>

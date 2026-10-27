@@ -7,6 +7,8 @@ export type Producto = {
   categoria: string;
   agotado: boolean;
   agotado_en: string | null;
+  nota: string | null;
+  ocasional: boolean;
   orden: number;
 };
 

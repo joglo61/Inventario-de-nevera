@@ -5,6 +5,8 @@ create table if not exists productos (
   categoria text not null default 'Otros',
   agotado boolean not null default false,
   agotado_en timestamptz,
+  nota text,
+  ocasional boolean not null default false,
   orden int not null default 0,
   creado_en timestamptz not null default now()
 );

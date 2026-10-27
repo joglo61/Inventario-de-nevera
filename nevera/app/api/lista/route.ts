@@ -6,13 +6,14 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  if (!codigoValido(searchParams.get("codigo"))) {
+  const codigo = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!codigoValido(codigo)) {
     return new Response("No autorizado", { status: 401 });
   }
 
   const { data, error } = await db()
     .from("productos")
-    .select("nombre, emoji, categoria, agotado_en")
+    .select("nombre, emoji, categoria, nota, agotado_en")
     .eq("agotado", true)
     .order("orden", { ascending: true });
 
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ total: data.length, items: data });
   }
 
-  const texto = data.map((p) => `${p.emoji} ${p.nombre}`).join("\n");
+  const texto = data.map((p) => `${p.emoji} ${p.nombre}${p.nota ? ` · ${p.nota}` : ""}`).join("\n");
   return new Response(texto, {
     headers: { "content-type": "text/plain; charset=utf-8" },
   });

@@ -2,24 +2,42 @@
 
 import { useEffect, useMemo, useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { agregar, alternar, eliminar, limpiarTodo } from "./actions";
+import { agregar, alternar, anotar, editar, eliminar, limpiarTodo } from "./actions";
 import type { Producto } from "@/lib/db";
+import { Icono } from "@/lib/iconos";
+import { LUGARES, esCajon, lugarDe, type IdLugar } from "@/lib/lugares";
 import Formulario from "./formulario";
+import Tema from "./tema";
 
 type Cambio =
   | { tipo: "alternar"; id: string; agotado: boolean }
-  | { tipo: "limpiar" };
+  | { tipo: "limpiar" }
+  | { tipo: "nota"; id: string; nota: string | null };
+
+// Debe reflejar lo que hacen las actions: los ocasionales se borran al comprarlos.
+function reducir(lista: Producto[], c: Cambio): Producto[] {
+  switch (c.tipo) {
+    case "limpiar":
+      return lista.filter((p) => !p.ocasional).map((p) => ({ ...p, agotado: false, nota: null }));
+    case "alternar":
+      return lista
+        .filter((p) => !(p.id === c.id && p.ocasional && !c.agotado))
+        .map((p) =>
+          p.id === c.id ? { ...p, agotado: c.agotado, nota: c.agotado ? p.nota : null } : p
+        );
+    case "nota":
+      return lista.map((p) => (p.id === c.id ? { ...p, nota: c.nota } : p));
+  }
+}
+
+const conNota = (p: Producto) => `${p.emoji} ${p.nombre}${p.nota ? ` · ${p.nota}` : ""}`;
 
 export default function Nevera({ inicial }: { inicial: Producto[] }) {
   const router = useRouter();
   const [, iniciar] = useTransition();
-  const [productos, aplicar] = useOptimistic(inicial, (lista, c: Cambio) =>
-    c.tipo === "limpiar"
-      ? lista.map((p) => ({ ...p, agotado: false }))
-      : lista.map((p) => (p.id === c.id ? { ...p, agotado: c.agotado } : p))
-  );
+  const [productos, aplicar] = useOptimistic(inicial, reducir);
   const [editando, setEditando] = useState(false);
-  const [nuevo, setNuevo] = useState(false);
+  const [form, setForm] = useState<null | "nuevo" | Producto>(null);
   const [aviso, setAviso] = useState("");
 
   useEffect(() => {
@@ -30,17 +48,30 @@ export default function Nevera({ inicial }: { inicial: Producto[] }) {
   }, [router]);
 
   const agotados = productos.filter((p) => p.agotado);
-  const grupos = useMemo(() => {
-    const m = new Map<string, Producto[]>();
+
+  // Lugar de la casa → estantes (una categoría por estante).
+  const lugares = useMemo(() => {
+    const m = new Map<IdLugar, Map<string, Producto[]>>();
     for (const p of productos) {
-      if (!m.has(p.categoria)) m.set(p.categoria, []);
-      m.get(p.categoria)!.push(p);
+      const l = lugarDe(p);
+      if (!m.has(l)) m.set(l, new Map());
+      const estantes = m.get(l)!;
+      if (!estantes.has(p.categoria)) estantes.set(p.categoria, []);
+      estantes.get(p.categoria)!.push(p);
     }
-    return [...m.entries()];
+    return LUGARES.filter((l) => m.has(l.id)).map((l) => ({
+      ...l,
+      estantes: [...m.get(l.id)!.entries()].sort(
+        (a, b) => Number(esCajon(a[0])) - Number(esCajon(b[0]))
+      ),
+    }));
   }, [productos]);
 
+  const categorias = [...new Set(productos.filter((p) => !p.ocasional).map((p) => p.categoria))];
+
   function tocar(p: Producto) {
-    if (editando) return;
+    if (editando) return setForm(p);
+    if (p.ocasional && !confirm(`¿Ya compraste ${p.nombre}? Se quitará de la lista.`)) return;
     iniciar(async () => {
       aplicar({ tipo: "alternar", id: p.id, agotado: !p.agotado });
       await alternar(p.id, !p.agotado);
@@ -61,9 +92,19 @@ export default function Nevera({ inicial }: { inicial: Producto[] }) {
     });
   }
 
+  function ponerNota(p: Producto) {
+    const n = prompt(`Nota para ${p.nombre} (cantidad, marca…)`, p.nota ?? "");
+    if (n === null) return;
+    const nota = n.trim().slice(0, 40);
+    iniciar(async () => {
+      aplicar({ tipo: "nota", id: p.id, nota: nota || null });
+      await anotar(p.id, nota);
+    });
+  }
+
   async function compartir() {
     if (agotados.length === 0) return mostrar("No hay nada por comprar");
-    const texto = agotados.map((p) => `• ${p.emoji} ${p.nombre}`).join("\n");
+    const texto = agotados.map((p) => `• ${conNota(p)}`).join("\n");
     try {
       if (navigator.share) await navigator.share({ title: "Mercado", text: texto });
       else {
@@ -82,6 +123,7 @@ export default function Nevera({ inicial }: { inicial: Producto[] }) {
     <main className="app">
       <header className="top">
         <div>
+          <p className="eyebrow">Inventario de casa</p>
           <h1>Nevera</h1>
           <p className="sub">
             {agotados.length === 0
@@ -89,81 +131,131 @@ export default function Nevera({ inicial }: { inicial: Producto[] }) {
               : `${agotados.length} por comprar`}
           </p>
         </div>
-        <button
-          className={`chip ${editando ? "chip-on" : ""}`}
-          onClick={() => setEditando(!editando)}
-        >
-          {editando ? "Listo" : "Editar"}
-        </button>
+        <div className="top-acciones">
+          <Tema />
+          <button
+            className={`chip ${editando ? "chip-on" : ""}`}
+            onClick={() => setEditando(!editando)}
+          >
+            <Icono n={editando ? "check" : "editar"} size={16} />
+            {editando ? "Listo" : "Editar"}
+          </button>
+        </div>
       </header>
 
       {agotados.length > 0 && !editando && (
-        <section className="resumen">
-          <div className="resumen-titulo">Por comprar</div>
-          <div className="resumen-items">
-            {agotados.map((p) => (
-              <span key={p.id} className="pill">
-                {p.emoji} {p.nombre}
-              </span>
-            ))}
+        <section className="ticket">
+          <div className="ticket-cabeza">
+            <h2>Lista de mercado</h2>
+            <span className="ticket-total">{agotados.length} ítems</span>
           </div>
+          <ul>
+            {agotados.map((p) => (
+              <li key={p.id}>
+                <button className="ticket-item" onClick={() => ponerNota(p)}>
+                  <span aria-hidden="true">{p.emoji}</span>
+                  <span className="ticket-nombre">{p.nombre}</span>
+                  <span className="ticket-puntos" aria-hidden="true" />
+                  <span className={`ticket-nota ${p.nota ? "" : "vacia"}`}>
+                    {p.nota ?? "+ nota"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="ticket-pie">Toca un producto para anotar cantidad o marca</p>
         </section>
       )}
 
-      {grupos.map(([cat, lista]) => (
-        <section key={cat} className="grupo">
-          <h2>{cat}</h2>
-          <div className="grid">
-            {lista.map((p) => (
-              <div key={p.id} className="celda">
-                <button
-                  className={`card ${p.agotado ? "agotado" : ""} ${editando ? "editando" : ""}`}
-                  onClick={() => tocar(p)}
-                  aria-pressed={p.agotado}
-                >
-                  <span className="emoji">{p.emoji}</span>
-                  <span className="nombre">{p.nombre}</span>
-                  {p.agotado && <span className="badge">Se acabó</span>}
-                </button>
-                {editando && (
-                  <button className="borrar" onClick={() => borrar(p)} aria-label="Quitar">
-                    ×
-                  </button>
-                )}
+      {lugares.map((l, i) => {
+        const faltan = l.estantes.reduce((n, [, ps]) => n + ps.filter((p) => p.agotado).length, 0);
+        return (
+          <section
+            key={l.id}
+            className={`lugar lugar-${l.id}`}
+            style={{ "--i": i } as React.CSSProperties}
+          >
+            <header className="lugar-cabeza">
+              <span className="lugar-icono">
+                <Icono n={l.icono} />
+              </span>
+              <h2>{l.nombre}</h2>
+              {faltan > 0 && l.id !== "tablero" && (
+                <span className="lugar-faltan">{faltan} por comprar</span>
+              )}
+            </header>
+            {l.estantes.map(([cat, lista]) => (
+              <div key={cat} className={`estante ${esCajon(cat) ? "cajon" : ""}`}>
+                {cat.toLowerCase() !== l.nombre.toLowerCase() && <h3>{cat}</h3>}
+                <div className="grid">
+                  {lista.map((p) => (
+                    <div key={p.id} className="celda">
+                      <button
+                        className={`card ${p.agotado ? "agotado" : ""} ${editando ? "editando" : ""}`}
+                        onClick={() => tocar(p)}
+                        aria-pressed={p.agotado}
+                      >
+                        <span className="emoji">{p.emoji}</span>
+                        <span className="nombre">{p.nombre}</span>
+                        {p.nota && <span className="nota">{p.nota}</span>}
+                        {p.agotado && !p.ocasional && <span className="badge">Se acabó</span>}
+                      </button>
+                      {editando && (
+                        <button
+                          className="borrar"
+                          onClick={() => borrar(p)}
+                          aria-label={`Quitar ${p.nombre}`}
+                        >
+                          <Icono n="cerrar" size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
-          </div>
-        </section>
-      ))}
+          </section>
+        );
+      })}
 
-      {nuevo && (
+      {form && (
         <Formulario
-          categorias={grupos.map(([c]) => c)}
+          producto={form === "nuevo" ? undefined : form}
+          categorias={categorias}
           existentes={productos.map((p) => p.nombre)}
-          onCerrar={() => setNuevo(false)}
-          onGuardar={(n, e, c, cerrar) => {
-            if (cerrar) setNuevo(false);
+          onCerrar={() => setForm(null)}
+          onGuardar={(d, cerrar) => {
+            if (cerrar) setForm(null);
             iniciar(async () => {
-              await agregar(n, e, c);
+              if (form === "nuevo") await agregar(d.nombre, d.emoji, d.categoria, d.ocasional, d.nota);
+              else await editar(form.id, d.nombre, d.emoji, d.categoria, d.nota);
             });
           }}
         />
       )}
 
-      <div className="barra">
-        <button className="btn-sec" onClick={() => setNuevo(true)}>
-          + Producto
-        </button>
-        <button className="btn-sec" onClick={limpiar} disabled={agotados.length === 0}>
-          Ya compré
-        </button>
-        <button className="btn-prim" onClick={compartir}>
-          Compartir
-        </button>
-      </div>
+      <nav className="barra">
+        <div className="barra-capsula">
+          <button className="barra-btn" onClick={() => setForm("nuevo")}>
+            <Icono n="mas" />
+            Producto
+          </button>
+          <button className="barra-btn" onClick={limpiar} disabled={agotados.length === 0}>
+            <Icono n="check" />
+            Ya compré
+          </button>
+          <button className="barra-btn prim" onClick={compartir}>
+            <Icono n="compartir" />
+            Compartir
+          </button>
+        </div>
+      </nav>
 
-      {aviso && <div className="aviso">{aviso}</div>}
+      {aviso && (
+        <div className="aviso" role="status">
+          {aviso}
+        </div>
+      )}
     </main>
   );
 }
-
