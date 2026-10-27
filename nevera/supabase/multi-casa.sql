@@ -165,15 +165,24 @@ begin
   on conflict (casa_id, user_id) do nothing;
 end $$;
 
--- /api/lista con la clave de la casa, sin sesión.
+-- /api/lista con la clave de la casa, sin sesión. Una clave que no es de ninguna casa da
+-- error 28000 (y la app responde "No autorizado") en vez de una lista vacía.
 create or replace function lista_por_token(t text)
 returns table (nombre text, emoji text, categoria text, nota text, agotado_en timestamptz)
-language sql stable security definer set search_path = public as $$
-  select p.nombre, p.emoji, p.categoria, p.nota, p.agotado_en
-  from productos p join casas c on c.id = p.casa_id
-  where c.api_token = t and p.agotado
-  order by p.orden;
-$$;
+language plpgsql stable security definer set search_path = public as $$
+declare
+  c uuid;
+begin
+  select id into c from casas where api_token = t;
+  if c is null then
+    raise exception 'Clave no válida' using errcode = '28000';
+  end if;
+  return query
+    select p.nombre, p.emoji, p.categoria, p.nota, p.agotado_en
+    from productos p
+    where p.casa_id = c and p.agotado
+    order by p.orden;
+end $$;
 
 revoke execute on function es_miembro(uuid), es_dueno(uuid), estado_sticker(text),
   activar_sticker(text, text, text), pedir_acceso(text, text) from public, anon;

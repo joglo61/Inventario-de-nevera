@@ -13,6 +13,8 @@ export async function GET(req: NextRequest) {
   const { url, key } = credenciales();
   const sb = createClient(url, key, { auth: { persistSession: false } });
   const { data, error } = await sb.rpc("lista_por_token", { t: token });
+  // 28000: la clave no es de ninguna casa (ver lista_por_token en multi-casa.sql).
+  if (error?.code === "28000") return new Response("No autorizado", { status: 401 });
   if (error) return new Response("Error", { status: 500 });
 
   const items = data as { nombre: string; emoji: string; categoria: string; nota: string | null }[];
