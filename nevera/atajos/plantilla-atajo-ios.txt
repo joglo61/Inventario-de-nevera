@@ -3,9 +3,10 @@ PLANTILLA DE ATAJO PARA CLIENTES (iOS 27, campo "Describe qué cambiar" o al cre
 Valores a reemplazar:
   CLAVE_DE_LA_CASA   → la clave de la casa del cliente (app → Integrantes → Casa → "Clave para atajos").
                         Solo la ve un dueño de la casa. Es como una contraseña: no la pidas por chat, que el cliente la pegue él mismo.
-  NOMBRE_DE_LA_LISTA → la lista de Recordatorios donde quiere su mercado (ej. Mercado). Debe existir antes.
   DIA_DE_LA_SEMANA   → día en que se actualiza sola (ej. sábados).
   HORA               → hora en que se actualiza sola (ej. 8:00 a. m.).
+
+Antes: el cliente debe tener en Recordatorios una lista llamada exactamente Mercado.
 
 ----------------------------------------------------------------------------------------------------
 
@@ -13,10 +14,10 @@ Crea un atajo llamado "Lista de mercado" que haga exactamente esto, en este orde
 
 1. Obtener contenido de URL de https://inventario-de-nevera.vercel.app/api/lista con método GET y un encabezado llamado Authorization cuyo valor sea: Bearer CLAVE_DE_LA_CASA
 2. Si el contenido obtenido es "No autorizado", mostrar una notificación que diga "La clave de Nevera no es válida" y detener el atajo.
-3. Buscar todos los recordatorios de la lista NOMBRE_DE_LA_LISTA y eliminarlos sin pedir confirmación.
+3. Buscar todos los recordatorios de la lista Mercado y eliminarlos sin pedir confirmación.
 4. Si el contenido obtenido está vacío, mostrar una notificación que diga "No falta nada en la casa 🎉" y detener el atajo.
 5. Dividir el contenido obtenido por saltos de línea.
-6. Para cada elemento de esa división que no esté vacío, agregar un recordatorio con ese texto a la lista NOMBRE_DE_LA_LISTA.
+6. Para cada elemento de esa división que no esté vacío, agregar un recordatorio con ese texto a la lista Mercado.
 7. Contar cuántos elementos se agregaron y mostrar una notificación que diga "Lista de mercado actualizada: [cantidad] productos".
 
 Crea también una automatización que ejecute este atajo todos los DIA_DE_LA_SEMANA a las HORA sin preguntar.
