@@ -31,6 +31,7 @@ create table if not exists miembros (
 alter table productos add column if not exists casa_id uuid references casas on delete cascade;
 create index if not exists productos_casa_orden on productos (casa_id, orden);
 create index if not exists miembros_usuario on miembros (user_id);
+create index if not exists stickers_casa on stickers (casa_id);
 
 -- ---------- Quién es quién (security definer para que las políticas no se llamen en bucle) ----------
 
@@ -68,13 +69,13 @@ create policy productos_casa on productos for all to authenticated
 
 drop policy if exists miembros_ver on miembros;
 create policy miembros_ver on miembros for select to authenticated
-  using (user_id = auth.uid() or es_miembro(casa_id));
+  using (user_id = (select auth.uid()) or es_miembro(casa_id));
 drop policy if exists miembros_gestionar on miembros;
 create policy miembros_gestionar on miembros for update to authenticated
   using (es_dueno(casa_id)) with check (es_dueno(casa_id));
 drop policy if exists miembros_quitar on miembros;
 create policy miembros_quitar on miembros for delete to authenticated
-  using (es_dueno(casa_id) or user_id = auth.uid());
+  using (es_dueno(casa_id) or user_id = (select auth.uid()));
 
 -- El dueño solo cambia rol y estado de un integrante; el nombre de la casa, solo el nombre.
 revoke update on miembros from anon, authenticated;
