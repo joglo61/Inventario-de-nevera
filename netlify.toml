@@ -1,5 +1,10 @@
-# La app vive en la carpeta nevera/. Netlify detecta Next.js y usa su adaptador automáticamente.
+# La app vive en la carpeta nevera/.
 [build]
   base = "nevera"
   command = "npm run build"
   publish = ".next"
+
+# Adaptador de Next.js declarado a mano: con la app en una subcarpeta, Netlify no lo
+# detectaba y publicaba solo archivos fijos (todo daba 404).
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
