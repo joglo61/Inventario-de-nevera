@@ -557,6 +557,39 @@ ul {
   z-index: 1;
 }
 
+/* Flechas para reordenar en modo Editar */
+.modo-editar .grid {
+  row-gap: 30px;
+  padding-bottom: 8px;
+}
+
+.flechas {
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 1;
+}
+
+.flechas button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--fondo);
+  background: var(--prim);
+  color: var(--sobre-prim);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.flechas button:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
 /* ---------- Barra inferior (vidrio) ---------- */
 
 .barra {
@@ -618,6 +651,9 @@ ul {
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom) + 100px);
   transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 32px);
+  text-align: center;
   background: var(--prim);
   color: var(--sobre-prim);
   border-radius: 999px;
@@ -743,6 +779,59 @@ ul {
   height: 22px;
   padding: 0;
   accent-color: var(--oro);
+}
+
+.lugares-elegir {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lugares-elegir legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--suave);
+  margin-bottom: 6px;
+}
+
+.lugares-elegir label {
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--linea);
+  background: var(--card);
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.lugares-elegir label.activo {
+  background: var(--prim);
+  color: var(--sobre-prim);
+  border-color: var(--prim);
+}
+
+.lugares-elegir label:has(input:focus-visible) {
+  outline: 2px solid var(--oro);
+  outline-offset: 2px;
+}
+
+.lugares-elegir input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.ayuda {
+  width: 100%;
+  font-size: 12px;
+  color: var(--suave);
 }
 
 .btn-prim,

@@ -2,17 +2,25 @@
 
 import { useEffect, useMemo, useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { agregar, alternar, anotar, editar, eliminar, limpiarTodo } from "./actions";
+import { agregar, alternar, anotar, editar, eliminar, limpiarTodo, ordenar } from "./actions";
 import type { Producto } from "@/lib/db";
 import { Icono } from "@/lib/iconos";
-import { LUGARES, esCajon, lugarDe, type IdLugar } from "@/lib/lugares";
+import {
+  LUGARES,
+  esCajon,
+  lugarDe,
+  lugarPorNombre,
+  reasignar,
+  type IdLugar,
+} from "@/lib/lugares";
 import Formulario from "./formulario";
 import Tema from "./tema";
 
 type Cambio =
   | { tipo: "alternar"; id: string; agotado: boolean }
   | { tipo: "limpiar" }
-  | { tipo: "nota"; id: string; nota: string | null };
+  | { tipo: "nota"; id: string; nota: string | null }
+  | { tipo: "ordenar"; ids: string[] };
 
 // Debe reflejar lo que hacen las actions: los ocasionales se borran al comprarlos.
 function reducir(lista: Producto[], c: Cambio): Producto[] {
@@ -27,6 +35,13 @@ function reducir(lista: Producto[], c: Cambio): Producto[] {
         );
     case "nota":
       return lista.map((p) => (p.id === c.id ? { ...p, nota: c.nota } : p));
+    case "ordenar": {
+      const valores = reasignar(lista.filter((p) => c.ids.includes(p.id)).map((p) => p.orden));
+      const nuevo = new Map(c.ids.map((id, i) => [id, valores[i]]));
+      return lista
+        .map((p) => (nuevo.has(p.id) ? { ...p, orden: nuevo.get(p.id)! } : p))
+        .sort((a, b) => a.orden - b.orden);
+    }
   }
 }
 
@@ -69,37 +84,50 @@ export default function Nevera({ inicial }: { inicial: Producto[] }) {
 
   const categorias = [...new Set(productos.filter((p) => !p.ocasional).map((p) => p.categoria))];
 
-  function tocar(p: Producto) {
-    if (editando) return setForm(p);
-    if (p.ocasional && !confirm(`¿Ya compraste ${p.nombre}? Se quitará de la lista.`)) return;
+  function lugarDeCategoria(categoria: string): IdLugar {
+    const p = productos.find((p) => !p.ocasional && p.categoria === categoria);
+    return p ? lugarDe(p) : lugarPorNombre(categoria);
+  }
+
+  // Aplica el cambio en pantalla y lo guarda; si falla, avisa y la pantalla vuelve a como estaba.
+  function enviar(cambio: Cambio | null, guardar: () => Promise<unknown>) {
     iniciar(async () => {
-      aplicar({ tipo: "alternar", id: p.id, agotado: !p.agotado });
-      await alternar(p.id, !p.agotado);
+      if (cambio) aplicar(cambio);
+      try {
+        await guardar();
+      } catch {
+        mostrar("No se pudo guardar. Revisa la conexión e intenta otra vez.", 4000);
+      }
     });
   }
 
+  function tocar(p: Producto) {
+    if (editando) return setForm(p);
+    if (p.ocasional && !confirm(`¿Ya compraste ${p.nombre}? Se quitará de la lista.`)) return;
+    enviar({ tipo: "alternar", id: p.id, agotado: !p.agotado }, () => alternar(p.id, !p.agotado));
+  }
+
   function limpiar() {
-    iniciar(async () => {
-      aplicar({ tipo: "limpiar" });
-      await limpiarTodo();
-    });
+    enviar({ tipo: "limpiar" }, limpiarTodo);
   }
 
   function borrar(p: Producto) {
     if (!confirm(`¿Quitar ${p.nombre}?`)) return;
-    iniciar(async () => {
-      await eliminar(p.id);
-    });
+    enviar(null, () => eliminar(p.id));
   }
 
   function ponerNota(p: Producto) {
     const n = prompt(`Nota para ${p.nombre} (cantidad, marca…)`, p.nota ?? "");
     if (n === null) return;
     const nota = n.trim().slice(0, 40);
-    iniciar(async () => {
-      aplicar({ tipo: "nota", id: p.id, nota: nota || null });
-      await anotar(p.id, nota);
-    });
+    enviar({ tipo: "nota", id: p.id, nota: nota || null }, () => anotar(p.id, nota));
+  }
+
+  // Mueve un producto un puesto dentro de su estante.
+  function mover(lista: Producto[], i: number, paso: -1 | 1) {
+    const ids = lista.map((p) => p.id);
+    [ids[i], ids[i + paso]] = [ids[i + paso], ids[i]];
+    enviar({ tipo: "ordenar", ids }, () => ordenar(ids));
   }
 
   async function compartir() {
@@ -114,13 +142,13 @@ export default function Nevera({ inicial }: { inicial: Producto[] }) {
     } catch {}
   }
 
-  function mostrar(t: string) {
+  function mostrar(t: string, ms = 2000) {
     setAviso(t);
-    setTimeout(() => setAviso(""), 2000);
+    setTimeout(() => setAviso(""), ms);
   }
 
   return (
-    <main className="app">
+    <main className={`app ${editando ? "modo-editar" : ""}`}>
       <header className="top">
         <div>
           <p className="eyebrow">Inventario de casa</p>
@@ -188,7 +216,7 @@ export default function Nevera({ inicial }: { inicial: Producto[] }) {
               <div key={cat} className={`estante ${esCajon(cat) ? "cajon" : ""}`}>
                 {cat.toLowerCase() !== l.nombre.toLowerCase() && <h3>{cat}</h3>}
                 <div className="grid">
-                  {lista.map((p) => (
+                  {lista.map((p, i) => (
                     <div key={p.id} className="celda">
                       <button
                         className={`card ${p.agotado ? "agotado" : ""} ${editando ? "editando" : ""}`}
@@ -209,6 +237,24 @@ export default function Nevera({ inicial }: { inicial: Producto[] }) {
                           <Icono n="cerrar" size={14} />
                         </button>
                       )}
+                      {editando && lista.length > 1 && (
+                        <div className="flechas">
+                          <button
+                            onClick={() => mover(lista, i, -1)}
+                            disabled={i === 0}
+                            aria-label={`Mover ${p.nombre} antes`}
+                          >
+                            <Icono n="izq" size={16} />
+                          </button>
+                          <button
+                            onClick={() => mover(lista, i, 1)}
+                            disabled={i === lista.length - 1}
+                            aria-label={`Mover ${p.nombre} después`}
+                          >
+                            <Icono n="der" size={16} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -222,14 +268,16 @@ export default function Nevera({ inicial }: { inicial: Producto[] }) {
         <Formulario
           producto={form === "nuevo" ? undefined : form}
           categorias={categorias}
+          lugarDeCategoria={lugarDeCategoria}
           existentes={productos.map((p) => p.nombre)}
           onCerrar={() => setForm(null)}
           onGuardar={(d, cerrar) => {
             if (cerrar) setForm(null);
-            iniciar(async () => {
-              if (form === "nuevo") await agregar(d.nombre, d.emoji, d.categoria, d.ocasional, d.nota);
-              else await editar(form.id, d.nombre, d.emoji, d.categoria, d.nota);
-            });
+            enviar(null, () =>
+              form === "nuevo"
+                ? agregar(d.nombre, d.emoji, d.categoria, d.lugar, d.ocasional, d.nota)
+                : editar(form.id, d.nombre, d.emoji, d.categoria, d.lugar, d.nota)
+            );
           }}
         />
       )}

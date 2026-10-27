@@ -9,6 +9,7 @@ export type Producto = {
   agotado_en: string | null;
   nota: string | null;
   ocasional: boolean;
+  lugar: string | null;
   orden: number;
 };
 

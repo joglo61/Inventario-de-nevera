@@ -50,6 +50,8 @@ const TRAZOS = {
   compartir: <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" />,
   editar: <path d="M21.17 6.81a2.82 2.82 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z" />,
   cerrar: <path d="M18 6 6 18M6 6l12 12" />,
+  izq: <path d="m15 18-6-6 6-6" />,
+  der: <path d="m9 18 6-6-6-6" />,
 };
 
 export type NombreIcono = keyof typeof TRAZOS;
