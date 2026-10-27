@@ -109,6 +109,7 @@ ul {
   justify-content: space-between;
   align-items: flex-end;
   gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 24px;
 }
 
@@ -156,6 +157,41 @@ ul {
 
 .icono-btn {
   width: 44px;
+}
+
+a.icono-btn,
+a.chip,
+a.boton {
+  color: inherit;
+  text-decoration: none;
+}
+
+.con-insignia {
+  position: relative;
+}
+
+.insignia {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--alerta);
+  color: light-dark(#fff, #1c1917);
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.selector-casa {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  max-width: 100%;
 }
 
 .chip {
@@ -917,4 +953,144 @@ ul {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ---------- Integrantes y pantallas de cuenta ---------- */
+
+.login .btn-sec {
+  background: transparent;
+  color: var(--tinta);
+  border: 1.5px solid var(--linea);
+  margin-top: 16px;
+}
+
+.login .enlace,
+.login .enlace:disabled {
+  background: none;
+  color: var(--suave);
+  min-height: 44px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.login a.boton {
+  margin-top: 20px;
+  min-height: 52px;
+  padding: 14px 32px;
+  border-radius: 14px;
+  background: var(--prim);
+  color: var(--sobre-prim);
+  font-weight: 700;
+}
+
+.tarjeta {
+  background: var(--card);
+  border: 1px solid var(--linea);
+  border-radius: 24px;
+  padding: 18px 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--sombra);
+}
+
+.tarjeta h2 {
+  font-family: var(--f-titulo-pila);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  margin-bottom: 10px;
+}
+
+.personas li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-top: 1px solid var(--linea);
+}
+
+.personas li:first-child {
+  border-top: none;
+}
+
+.persona {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.persona span {
+  font-size: 13px;
+  color: var(--suave);
+  overflow-wrap: anywhere;
+}
+
+.persona-acciones {
+  display: flex;
+  gap: 6px;
+}
+
+.mini {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--linea);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mini.prim {
+  background: var(--prim);
+  color: var(--sobre-prim);
+  border-color: var(--prim);
+}
+
+.peligro {
+  color: var(--alerta);
+}
+
+.fila {
+  display: flex;
+  gap: 8px;
+}
+
+.fila input,
+.tarjeta input {
+  flex: 1;
+  min-width: 0;
+  border: 1.5px solid var(--linea);
+  background: var(--superficie);
+  color: var(--tinta);
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 16px;
+}
+
+.tarjeta .ayuda {
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+
+code {
+  font-size: 12px;
+  background: var(--fondo);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.acciones-pie {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.acciones-pie button {
+  width: 100%;
+}
+
+.error.bloque {
+  margin-bottom: 12px;
 }

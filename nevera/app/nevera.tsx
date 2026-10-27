@@ -1,9 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useOptimistic, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { agregar, alternar, anotar, editar, eliminar, limpiarTodo, ordenar } from "./actions";
+import {
+  agregar,
+  alternar,
+  anotar,
+  editar,
+  elegirCasa,
+  eliminar,
+  limpiarTodo,
+  ordenar,
+} from "./actions";
 import type { Producto } from "@/lib/db";
+import type { Casa } from "@/lib/supabase";
 import { Icono } from "@/lib/iconos";
 import {
   LUGARES,
@@ -47,7 +58,17 @@ function reducir(lista: Producto[], c: Cambio): Producto[] {
 
 const conNota = (p: Producto) => `${p.emoji} ${p.nombre}${p.nota ? ` · ${p.nota}` : ""}`;
 
-export default function Nevera({ inicial }: { inicial: Producto[] }) {
+export default function Nevera({
+  inicial,
+  casa,
+  casas,
+  solicitudes,
+}: {
+  inicial: Producto[];
+  casa: Casa;
+  casas: Casa[];
+  solicitudes: number;
+}) {
   const router = useRouter();
   const [, iniciar] = useTransition();
   const [productos, aplicar] = useOptimistic(inicial, reducir);
@@ -151,7 +172,25 @@ export default function Nevera({ inicial }: { inicial: Producto[] }) {
     <main className={`app ${editando ? "modo-editar" : ""}`}>
       <header className="top">
         <div>
-          <p className="eyebrow">Inventario de casa</p>
+          {casas.length > 1 ? (
+            <select
+              className="eyebrow selector-casa"
+              value={casa.id}
+              onChange={(e) => {
+                const id = e.target.value;
+                iniciar(() => elegirCasa(id));
+              }}
+              aria-label="Cambiar de casa"
+            >
+              {casas.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="eyebrow">{casa.nombre}</p>
+          )}
           <h1>Nevera</h1>
           <p className="sub">
             {agotados.length === 0
@@ -161,6 +200,14 @@ export default function Nevera({ inicial }: { inicial: Producto[] }) {
         </div>
         <div className="top-acciones">
           <Tema />
+          <Link
+            href="/integrantes"
+            className="icono-btn con-insignia"
+            aria-label={solicitudes ? `Integrantes, ${solicitudes} solicitudes` : "Integrantes"}
+          >
+            <Icono n="personas" />
+            {solicitudes > 0 && <span className="insignia">{solicitudes}</span>}
+          </Link>
           <button
             className={`chip ${editando ? "chip-on" : ""}`}
             onClick={() => setEditando(!editando)}

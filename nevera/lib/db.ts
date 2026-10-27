@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type Producto = {
   id: string;
@@ -7,23 +7,17 @@ export type Producto = {
   categoria: string;
   agotado: boolean;
   agotado_en: string | null;
+  orden: number;
   nota: string | null;
   ocasional: boolean;
   lugar: string | null;
-  orden: number;
 };
 
-export function db() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("Faltan variables de Supabase");
-  return createClient(url, key, { auth: { persistSession: false } });
-}
-
-export async function listarProductos(): Promise<Producto[]> {
-  const { data, error } = await db()
+export async function listarProductos(sb: SupabaseClient, casaId: string): Promise<Producto[]> {
+  const { data, error } = await sb
     .from("productos")
     .select("*")
+    .eq("casa_id", casaId)
     .order("orden", { ascending: true });
   if (error) throw new Error(error.message);
   return data as Producto[];

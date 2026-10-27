@@ -1,29 +1,25 @@
 import { NextRequest } from "next/server";
-import { codigoValido } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { createClient } from "@supabase/supabase-js";
+import { credenciales } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
+// Lista de lo que falta, para atajos: header "Authorization: Bearer <clave de la casa>".
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const codigo = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!codigoValido(codigo)) {
-    return new Response("No autorizado", { status: 401 });
-  }
+  const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  if (!token) return new Response("No autorizado", { status: 401 });
 
-  const { data, error } = await db()
-    .from("productos")
-    .select("nombre, emoji, categoria, nota, agotado_en")
-    .eq("agotado", true)
-    .order("orden", { ascending: true });
-
+  const { url, key } = credenciales();
+  const sb = createClient(url, key, { auth: { persistSession: false } });
+  const { data, error } = await sb.rpc("lista_por_token", { t: token });
   if (error) return new Response("Error", { status: 500 });
 
+  const items = data as { nombre: string; emoji: string; categoria: string; nota: string | null }[];
   if (searchParams.get("formato") === "json") {
-    return Response.json({ total: data.length, items: data });
+    return Response.json({ total: items.length, items });
   }
-
-  const texto = data.map((p) => `${p.emoji} ${p.nombre}${p.nota ? ` · ${p.nota}` : ""}`).join("\n");
+  const texto = items.map((p) => `${p.emoji} ${p.nombre}${p.nota ? ` · ${p.nota}` : ""}`).join("\n");
   return new Response(texto, {
     headers: { "content-type": "text/plain; charset=utf-8" },
   });

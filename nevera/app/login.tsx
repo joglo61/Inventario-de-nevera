@@ -1,11 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
-import { entrar } from "./actions";
+import { entrar, type EstadoEntrar } from "./actions";
 import { Icono } from "@/lib/iconos";
 
-export default function Login() {
-  const [estado, accion, pendiente] = useActionState(entrar, { error: "" });
+const INICIAL: EstadoEntrar = { paso: "email", email: "", error: "" };
+
+export default function Login({ next = "/", titulo }: { next?: string; titulo?: string }) {
+  const [estado, accion, pendiente] = useActionState(entrar, INICIAL);
+  const enCodigo = estado.paso === "codigo";
   return (
     <main className="login">
       <div className="login-icono">
@@ -13,20 +16,47 @@ export default function Login() {
       </div>
       <p className="eyebrow">Inventario de casa</p>
       <h1>Nevera</h1>
-      <p className="sub">Escribe el código de la casa</p>
+      <p className="sub">
+        {enCodigo
+          ? `Te enviamos un código a ${estado.email}`
+          : (titulo ?? "Entra con tu correo para ver tu casa")}
+      </p>
       <form action={accion}>
-        <input
-          name="codigo"
-          type="password"
-          autoComplete="current-password"
-          placeholder="Código"
-          autoFocus
-          required
-        />
+        <input type="hidden" name="next" value={next} />
+        {enCodigo ? (
+          <input
+            key="codigo"
+            name="codigo"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="Código"
+            aria-label="Código del correo"
+            maxLength={10}
+            autoFocus
+            required
+          />
+        ) : (
+          <input
+            key="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="tu@correo.com"
+            aria-label="Correo"
+            defaultValue={estado.email}
+            autoFocus
+            required
+          />
+        )}
         <button type="submit" disabled={pendiente}>
-          {pendiente ? "Entrando…" : "Entrar"}
+          {pendiente ? "Un momento…" : enCodigo ? "Entrar" : "Enviarme el código"}
         </button>
-        {estado?.error && <p className="error">{estado.error}</p>}
+        {enCodigo && (
+          <button type="submit" name="cambiar" value="1" className="enlace" formNoValidate>
+            Usar otro correo
+          </button>
+        )}
+        {estado.error && <p className="error">{estado.error}</p>}
       </form>
     </main>
   );
