@@ -1091,6 +1091,12 @@ code {
   width: 100%;
 }
 
+.captcha {
+  min-height: 65px;
+  display: flex;
+  justify-content: center;
+}
+
 .fila-sola {
   margin-top: 8px;
 }

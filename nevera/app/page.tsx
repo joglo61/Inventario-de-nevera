@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const s = await sesion();
-  if (!s) return <Login />;
+  if (!s) return <Login captcha={process.env.TURNSTILE_SITE_KEY} />;
 
   if (!s.casa) {
     const { count } = await s.sb

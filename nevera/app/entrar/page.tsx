@@ -9,5 +9,11 @@ export default async function Entrar({ searchParams }: { searchParams: Promise<{
   const next = rutaSegura((await searchParams).next);
   const sb = await supabase();
   if ((await sb.auth.getUser()).data.user) redirect(next);
-  return <Login next={next} titulo="Entra con tu correo para continuar" />;
+  return (
+    <Login
+      next={next}
+      titulo="Entra con tu correo para continuar"
+      captcha={process.env.TURNSTILE_SITE_KEY}
+    />
+  );
 }

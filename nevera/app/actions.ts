@@ -57,8 +57,18 @@ export async function entrar(prev: EstadoEntrar, fd: FormData): Promise<EstadoEn
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return { paso: "email", email, error: "Escribe un correo válido" };
     }
-    const { error } = await sb.auth.signInWithOtp({ email });
-    if (error) return { paso: "email", email, error: "No se pudo enviar el código. Intenta en un momento." };
+    const captchaToken = String(fd.get("captcha") ?? "") || undefined;
+    const { error } = await sb.auth.signInWithOtp({ email, options: { captchaToken } });
+    if (error) {
+      const captcha = /captcha/i.test(error.message);
+      return {
+        paso: "email",
+        email,
+        error: captcha
+          ? "No pudimos verificar que eres humano. Intenta otra vez."
+          : "No se pudo enviar el código. Intenta en un momento.",
+      };
+    }
     return { paso: "codigo", email, error: "" };
   }
 

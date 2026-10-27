@@ -1,14 +1,26 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { entrar, type EstadoEntrar } from "./actions";
+import Captcha from "./captcha";
 import { Icono } from "@/lib/iconos";
 
 const INICIAL: EstadoEntrar = { paso: "email", email: "", error: "" };
 
-export default function Login({ next = "/", titulo }: { next?: string; titulo?: string }) {
+export default function Login({
+  next = "/",
+  titulo,
+  captcha,
+}: {
+  next?: string;
+  titulo?: string;
+  // Site key de Cloudflare Turnstile; sin ella se entra sin CAPTCHA.
+  captcha?: string;
+}) {
   const [estado, accion, pendiente] = useActionState(entrar, INICIAL);
+  const [token, setToken] = useState("");
   const enCodigo = estado.paso === "codigo";
+  const falta = !enCodigo && !!captcha && !token;
   return (
     <main className="login">
       <div className="login-icono">
@@ -36,20 +48,34 @@ export default function Login({ next = "/", titulo }: { next?: string; titulo?: 
             required
           />
         ) : (
-          <input
-            key="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="tu@correo.com"
-            aria-label="Correo"
-            defaultValue={estado.email}
-            autoFocus
-            required
-          />
+          <>
+            <input
+              key="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="tu@correo.com"
+              aria-label="Correo"
+              defaultValue={estado.email}
+              autoFocus
+              required
+            />
+            {captcha && (
+              <>
+                <Captcha sitekey={captcha} reiniciar={estado} onToken={setToken} />
+                <input type="hidden" name="captcha" value={token} />
+              </>
+            )}
+          </>
         )}
-        <button type="submit" disabled={pendiente}>
-          {pendiente ? "Un momento…" : enCodigo ? "Entrar" : "Enviarme el código"}
+        <button type="submit" disabled={pendiente || falta}>
+          {pendiente
+            ? "Un momento…"
+            : enCodigo
+              ? "Entrar"
+              : falta
+                ? "Verificando que eres humano…"
+                : "Enviarme el código"}
         </button>
         {enCodigo && (
           <button type="submit" name="cambiar" value="1" className="enlace" formNoValidate>
