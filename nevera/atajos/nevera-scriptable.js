@@ -2,8 +2,8 @@
 // Funciona al abrirlo, como widget en la pantalla de inicio y con Siri (desde un atajo).
 // La primera vez pide la clave de tu casa (app → Integrantes → Casa) y la guarda en el llavero.
 
-const API = "https://inventario-de-nevera.vercel.app/api/lista?formato=json";
-const APP = "https://inventario-de-nevera.vercel.app";
+const API = "https://inventario-de-nevera.netlify.app/api/lista?formato=json";
+const APP = "https://inventario-de-nevera.netlify.app";
 const LLAVE = "nevera_clave";
 
 const MENSAJES = {

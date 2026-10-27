@@ -3,7 +3,7 @@
 with nuevos as (
   insert into stickers (creado_en) select now() from generate_series(1, 10) returning id
 )
-select 'https://inventario-de-nevera.vercel.app/t/' || id as url from nuevos;
+select 'https://inventario-de-nevera.netlify.app/t/' || id as url from nuevos;
 
 -- Stickers sin activar:
--- select 'https://inventario-de-nevera.vercel.app/t/' || id as url from stickers where casa_id is null order by creado_en;
+-- select 'https://inventario-de-nevera.netlify.app/t/' || id as url from stickers where casa_id is null order by creado_en;

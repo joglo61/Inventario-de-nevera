@@ -12,7 +12,7 @@ Antes: el cliente debe tener en Recordatorios una lista llamada exactamente Merc
 
 Crea un atajo llamado "Lista de mercado" que haga exactamente esto, en este orden:
 
-1. Obtener contenido de URL de https://inventario-de-nevera.vercel.app/api/lista con método GET y un encabezado llamado Authorization cuyo valor sea: Bearer CLAVE_DE_LA_CASA
+1. Obtener contenido de URL de https://inventario-de-nevera.netlify.app/api/lista con método GET y un encabezado llamado Authorization cuyo valor sea: Bearer CLAVE_DE_LA_CASA
 2. Si el contenido obtenido es "No autorizado", mostrar una notificación que diga "La clave de Nevera no es válida" y detener el atajo.
 3. Buscar todos los recordatorios de la lista Mercado y eliminarlos sin pedir confirmación.
 4. Si el contenido obtenido está vacío, mostrar una notificación que diga "No falta nada en la casa 🎉" y detener el atajo.
