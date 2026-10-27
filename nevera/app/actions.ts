@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { listarProductos } from "@/lib/db";
 import { esLugarCasa, reasignar } from "@/lib/lugares";
+import { enviar } from "@/lib/push";
 import { rutaSegura } from "@/lib/ruta";
 import { CASA_ACTUAL, sesion, supabase } from "@/lib/supabase";
 
@@ -185,6 +186,59 @@ export async function cambiarClave() {
   const casa = await casaActual();
   await casa.sb.rpc("cambiar_clave", { c: casa.casaId });
   volver();
+}
+
+// ---------- Recordatorio semanal (ver supabase/recordatorio.sql) ----------
+
+// Día 0–6 (0 = domingo) y hora 0–23; día vacío = apagado. Las reglas RLS solo lo dejan a un dueño.
+export async function guardarRecordatorio(fd: FormData) {
+  const casa = await casaActual();
+  const dia = String(fd.get("dia") ?? "");
+  const hora = Number(fd.get("hora"));
+  const apagado = dia === "";
+  if (!apagado && !(Number.isInteger(Number(dia)) && Number.isInteger(hora))) volver("horario");
+  await casa.sb
+    .from("casas")
+    .update({
+      recordatorio_dia: apagado ? null : Number(dia),
+      recordatorio_hora: apagado ? null : hora,
+    })
+    .eq("id", casa.casaId);
+  volver();
+}
+
+export async function cambiarMiRecordatorio(activo: boolean) {
+  const casa = await casaActual();
+  await casa.sb.rpc("mi_recordatorio", { c: casa.casaId, activo });
+  volver();
+}
+
+export async function guardarSuscripcion(endpoint: string, p256dh: string, auth: string) {
+  const sb = await supabase();
+  revisar(await sb.rpc("guardar_suscripcion", { e: endpoint, p: p256dh, a: auth }));
+}
+
+export async function borrarSuscripcion(endpoint: string) {
+  const sb = await supabase();
+  revisar(await sb.from("suscripciones").delete().eq("endpoint", endpoint));
+}
+
+// Manda un aviso a todos mis celulares con avisos activos, para comprobar que llegan.
+export async function probarAviso() {
+  const casa = await casaActual();
+  const { data } = await casa.sb.from("suscripciones").select("endpoint, p256dh, auth");
+  if (!data?.length) volver("sin-avisos");
+  await Promise.all(
+    data.map(async (s) => {
+      const sigue = await enviar(s, {
+        titulo: "Nevera",
+        cuerpo: "Así te llegará el recordatorio de lo que falta 🎉",
+        url: "/",
+      }).catch(() => true);
+      if (!sigue) await casa.sb.from("suscripciones").delete().eq("endpoint", s.endpoint);
+    })
+  );
+  volver("prueba-enviada");
 }
 
 export async function renombrarCasa(fd: FormData) {

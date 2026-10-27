@@ -1057,7 +1057,8 @@ a.boton {
 }
 
 .fila input,
-.tarjeta input {
+.tarjeta input,
+.tarjeta select {
   flex: 1;
   min-width: 0;
   border: 1.5px solid var(--linea);
@@ -1097,10 +1098,35 @@ code {
   justify-content: center;
 }
 
+.avisos {
+  margin-top: 12px;
+}
+
+.fila-aviso {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.ok {
+  color: light-dark(#15803d, #4ade80);
+  font-weight: 600;
+}
+
+.listo {
+  color: light-dark(#15803d, #4ade80);
+  font-size: 14px;
+}
+
 .fila-sola {
   margin-top: 8px;
 }
 
-.error.bloque {
+.error.bloque,
+.listo.bloque {
   margin-bottom: 12px;
 }
