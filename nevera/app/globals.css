@@ -1091,6 +1091,10 @@ code {
   width: 100%;
 }
 
+.fila-sola {
+  margin-top: 8px;
+}
+
 .error.bloque {
   margin-bottom: 12px;
 }

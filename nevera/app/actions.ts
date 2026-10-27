@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { listarProductos } from "@/lib/db";
 import { esLugarCasa, reasignar } from "@/lib/lugares";
-import { CASA_ACTUAL, rutaSegura, sesion, supabase } from "@/lib/supabase";
+import { rutaSegura } from "@/lib/ruta";
+import { CASA_ACTUAL, sesion, supabase } from "@/lib/supabase";
 
 const OCASIONALES = "Ocasionales";
 const UN_ANO = 60 * 60 * 24 * 365;
@@ -167,6 +168,13 @@ export async function salirDeCasa() {
   await casa.sb.from("miembros").delete().eq("casa_id", casa.casaId).eq("user_id", casa.userId);
   (await cookies()).delete(CASA_ACTUAL);
   redirect("/");
+}
+
+// Los atajos con la clave anterior dejan de funcionar (útil al sacar a alguien de la casa).
+export async function cambiarClave() {
+  const casa = await casaActual();
+  await casa.sb.rpc("cambiar_clave", { c: casa.casaId });
+  volver();
 }
 
 export async function renombrarCasa(fd: FormData) {

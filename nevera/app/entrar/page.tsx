@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { rutaSegura, supabase } from "@/lib/supabase";
+import { rutaSegura } from "@/lib/ruta";
+import { supabase } from "@/lib/supabase";
 import Login from "../login";
 
 export const dynamic = "force-dynamic";

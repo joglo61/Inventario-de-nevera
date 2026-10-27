@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   aprobar,
+  cambiarClave,
   cambiarRol,
   cerrarSesion,
   quitar,
@@ -32,13 +33,14 @@ export default async function Integrantes({ searchParams }: { searchParams: Prom
   if (!s.casa) redirect("/");
   const error = ERRORES[(await searchParams).e ?? ""];
 
-  const [{ data }, { data: casa }] = await Promise.all([
+  // La clave solo se la da la base de datos a un dueño; a los demás les llega vacía.
+  const [{ data }, { data: clave }] = await Promise.all([
     s.sb
       .from("miembros")
       .select("user_id, nombre, email, rol, estado")
       .eq("casa_id", s.casa.id)
       .order("creado_en"),
-    s.sb.from("casas").select("api_token").eq("id", s.casa.id).single(),
+    s.sb.rpc("clave_de_casa", { c: s.casa.id }),
   ]);
   const miembros = (data ?? []) as Miembro[];
   const yo = miembros.find((m) => m.user_id === s.user.id);
@@ -125,10 +127,21 @@ export default async function Integrantes({ searchParams }: { searchParams: Prom
             <input name="nombre" defaultValue={s.casa.nombre} aria-label="Nombre de la casa" maxLength={40} required />
             <button className="mini prim">Guardar</button>
           </form>
-          {casa?.api_token && (
-            <p className="ayuda">
-              Clave para atajos (/api/lista): <code>{casa.api_token}</code>
-            </p>
+          {clave && (
+            <>
+              <p className="ayuda">
+                Clave para atajos (/api/lista): <code>{clave}</code>
+              </p>
+              <form action={cambiarClave} className="fila-sola">
+                <Confirmar
+                  pregunta="¿Cambiar la clave? Los atajos con la clave actual dejarán de funcionar y tendrás que poner la nueva."
+                  className="mini"
+                >
+                  Cambiar clave
+                </Confirmar>
+              </form>
+              <p className="ayuda">Si sacas a alguien de la casa, cámbiala para que su atajo deje de ver tu lista.</p>
+            </>
           )}
         </section>
       )}

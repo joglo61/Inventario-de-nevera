@@ -42,8 +42,3 @@ export async function sesion() {
   const casa = casas.find((c) => c.id === elegida) ?? casas[0] ?? null;
   return { sb, user, casas, casa };
 }
-
-// Evita redirigir a otro sitio con ?next=https://...
-export function rutaSegura(next: unknown) {
-  return typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : "/";
-}

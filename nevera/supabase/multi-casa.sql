@@ -197,3 +197,27 @@ grant execute on function lista_por_token(text) to anon, authenticated;
 --    where casa_id is null;
 -- 2. Ya sin productos sueltos:
 --    alter table productos alter column casa_id set not null;
+
+-- ---------- La clave para atajos solo la ven los dueños, y la pueden cambiar ----------
+revoke select on casas from anon, authenticated;
+grant select (id, nombre, creado_en) on casas to authenticated;
+
+create or replace function clave_de_casa(c uuid) returns text
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not es_dueno(c) then raise exception 'Solo un dueño puede ver la clave' using errcode = '42501'; end if;
+  return (select api_token from casas where id = c);
+end $$;
+
+create or replace function cambiar_clave(c uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  t text := replace(gen_random_uuid()::text, '-', '');
+begin
+  if not es_dueno(c) then raise exception 'Solo un dueño puede cambiar la clave' using errcode = '42501'; end if;
+  update casas set api_token = t where id = c;
+  return t;
+end $$;
+
+revoke execute on function clave_de_casa(uuid), cambiar_clave(uuid) from public, anon;
+grant execute on function clave_de_casa(uuid), cambiar_clave(uuid) to authenticated;
