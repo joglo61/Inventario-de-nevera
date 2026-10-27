@@ -76,11 +76,18 @@ export default function Nevera({
   const [form, setForm] = useState<null | "nuevo" | Producto>(null);
   const [aviso, setAviso] = useState("");
 
+  // Trae los cambios de los demás: cada minuto con la app a la vista y al volver a ella.
+  // Cada refresco gasta créditos del hosting, por eso no es más seguido.
   useEffect(() => {
-    const t = setInterval(() => {
+    const refrescar = () => {
       if (document.visibilityState === "visible") router.refresh();
-    }, 15000);
-    return () => clearInterval(t);
+    };
+    const t = setInterval(refrescar, 60000);
+    document.addEventListener("visibilitychange", refrescar);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", refrescar);
+    };
   }, [router]);
 
   const agotados = productos.filter((p) => p.agotado);

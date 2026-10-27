@@ -1,0 +1,5 @@
+# La app vive en la carpeta nevera/. Netlify detecta Next.js y usa su adaptador automáticamente.
+[build]
+  base = "nevera"
+  command = "npm run build"
+  publish = ".next"
