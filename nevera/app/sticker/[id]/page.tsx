@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { activarSticker, pedirAcceso } from "../../actions";
 import { Icono } from "@/lib/iconos";
@@ -22,7 +21,7 @@ export default async function Sticker({
   const { id } = await params;
   const error = ERRORES[(await searchParams).e ?? ""];
   const sb = await supabase();
-  if (!(await sb.auth.getUser()).data.user) redirect(`/entrar?next=/t/${encodeURIComponent(id)}`);
+  if (!(await sb.auth.getUser()).data.user) redirect(`/entrar?next=/sticker/${encodeURIComponent(id)}`);
 
   const { data } = await sb.rpc("estado_sticker", { s: id });
   const info = (data?.[0] ?? { estado: "invalido" }) as { estado: string; casa_nombre: string | null };
@@ -70,9 +69,10 @@ export default async function Sticker({
         <>
           <p className="eyebrow">{info.casa_nombre}</p>
           <h1>Ya eres de la casa</h1>
-          <Link className="boton" href={`/t/${encodeURIComponent(id)}`}>
+          {/* <a> y no <Link>: /t es un desvío y necesita carga completa */}
+          <a className="boton" href={`/t/${encodeURIComponent(id)}`}>
             Abrir
-          </Link>
+          </a>
         </>
       )}
 

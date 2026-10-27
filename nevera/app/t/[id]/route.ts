@@ -8,7 +8,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const ir = (ruta: string) => NextResponse.redirect(new URL(ruta, req.url));
   const sb = await supabase();
-  if (!(await sb.auth.getUser()).data.user) return ir(`/entrar?next=/t/${encodeURIComponent(id)}`);
+  // Después de entrar se vuelve a /sticker (una página), no a /t: /t no recibe formularios.
+  if (!(await sb.auth.getUser()).data.user) return ir(`/entrar?next=/sticker/${encodeURIComponent(id)}`);
 
   const { data } = await sb.rpc("estado_sticker", { s: id });
   const info = data?.[0] as { estado: string; casa_id: string | null } | undefined;
