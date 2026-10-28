@@ -30,7 +30,7 @@ type Miembro = {
 
 const ERRORES: Record<string, string> = {
   ultimo: "La casa necesita al menos un dueño. Nombra otro dueño primero.",
-  horario: "Elige un día y una hora válidos.",
+  horario: "Elige una hora válida.",
   "sin-avisos": "Primero activa los avisos en este celular.",
 };
 
@@ -39,7 +39,13 @@ const LISTO: Record<string, string> = {
 };
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-const formatoHora = (h: number) => `${h % 12 || 12}:00 ${h < 12 ? "a. m." : "p. m."}`;
+const SEMANA = [1, 2, 3, 4, 5, 6, 0]; // en Colombia la semana arranca el lunes
+const dosCifras = (n: number) => String(n).padStart(2, "0");
+const formatoHora = (h: number, m: number) => `${h % 12 || 12}:${dosCifras(m)} ${h < 12 ? "a. m." : "p. m."}`;
+const listaDias = (dias: number[]) =>
+  dias.length === 7
+    ? "Todos los días"
+    : new Intl.ListFormat("es").format(SEMANA.filter((d) => dias.includes(d)).map((d) => DIAS[d]));
 
 export default async function Integrantes({ searchParams }: { searchParams: Promise<{ e?: string }> }) {
   const s = await sesion();
@@ -57,10 +63,16 @@ export default async function Integrantes({ searchParams }: { searchParams: Prom
       .eq("casa_id", s.casa.id)
       .order("creado_en"),
     s.sb.rpc("clave_de_casa", { c: s.casa.id }),
-    s.sb.from("casas").select("recordatorio_dia, recordatorio_hora").eq("id", s.casa.id).single(),
+    s.sb
+      .from("casas")
+      .select("recordatorio_dias, recordatorio_hora, recordatorio_minuto")
+      .eq("id", s.casa.id)
+      .single(),
   ]);
-  const dia: number | null = horario?.recordatorio_dia ?? null;
+  const dias: number[] = horario?.recordatorio_dias ?? [];
   const hora: number = horario?.recordatorio_hora ?? 8;
+  const minuto: number = horario?.recordatorio_minuto ?? 0;
+  const programado = dias.length ? `${listaDias(dias)} a las ${formatoHora(hora, minuto)}.` : null;
   const clavePush = process.env.VAPID_PUBLIC_KEY;
   const miembros = (data ?? []) as Miembro[];
   const yo = miembros.find((m) => m.user_id === s.user.id);
@@ -142,31 +154,35 @@ export default async function Integrantes({ searchParams }: { searchParams: Prom
       </section>
 
       <section className="tarjeta">
-        <h2>Recordatorio semanal</h2>
+        <h2>Recordatorio</h2>
         <p className="ayuda">Una notificación con lo que falta, en los celulares que tengan los avisos activos.</p>
+        <p className="programado">{programado ?? "Apagado"}</p>
         {esDueno ? (
-          <form action={guardarRecordatorio} className="fila">
-            <select name="dia" defaultValue={dia ?? ""} aria-label="Día del recordatorio">
-              <option value="">Apagado</option>
-              {DIAS.map((d, i) => (
-                <option key={d} value={i}>
-                  {d}
-                </option>
+          <form action={guardarRecordatorio} className="horario">
+            <fieldset className="dias">
+              <legend>Días</legend>
+              {SEMANA.map((d) => (
+                <label key={d} className="dia">
+                  <input type="checkbox" name="dias" value={d} defaultChecked={dias.includes(d)} aria-label={DIAS[d]} />
+                  <span aria-hidden="true">{DIAS[d].slice(0, 2)}</span>
+                </label>
               ))}
-            </select>
-            <select name="hora" defaultValue={hora} aria-label="Hora del recordatorio">
-              {Array.from({ length: 24 }, (_, h) => (
-                <option key={h} value={h}>
-                  {formatoHora(h)}
-                </option>
-              ))}
-            </select>
-            <button className="mini prim">Guardar</button>
+            </fieldset>
+            <label className="hora">
+              <span>Hora</span>
+              <input
+                type="time"
+                name="hora"
+                defaultValue={`${dosCifras(hora)}:${dosCifras(minuto)}`}
+                required
+                className="hora-grande"
+              />
+            </label>
+            <p className="ayuda">Sin días marcados, el recordatorio queda apagado.</p>
+            <button className="mini prim">Guardar horario</button>
           </form>
         ) : (
-          <p className="ayuda">
-            {dia === null ? "El dueño todavía no lo ha programado." : `${DIAS[dia]} a las ${formatoHora(hora)}.`}
-          </p>
+          !programado && <p className="ayuda">El dueño todavía no lo ha programado.</p>
         )}
         {yo && (
           <div className="fila-aviso">

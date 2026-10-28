@@ -1130,3 +1130,88 @@ code {
 .listo.bloque {
   margin-bottom: 12px;
 }
+
+/* Recordatorio: días como botones redondos y la hora con el selector del celular. */
+.programado {
+  margin-top: 12px;
+  font-family: var(--f-titulo-pila);
+  font-size: 22px;
+}
+
+.horario {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.dias {
+  display: flex;
+  gap: 6px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.dias legend,
+.hora > span {
+  font-size: 13px;
+  color: var(--suave);
+  margin-bottom: 8px;
+}
+
+.dia {
+  flex: 1;
+  position: relative;
+}
+
+.tarjeta .dia input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.dia span {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  max-width: 48px;
+  margin: 0 auto;
+  border-radius: 999px;
+  border: 1.5px solid var(--linea);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.dia input:checked + span {
+  background: var(--prim);
+  color: var(--sobre-prim);
+  border-color: var(--prim);
+}
+
+.dia input:focus-visible + span {
+  outline: 2px solid var(--oro);
+  outline-offset: 2px;
+}
+
+.hora {
+  display: grid;
+}
+
+.tarjeta .hora-grande {
+  font-family: var(--f-titulo-pila);
+  font-size: 32px;
+  text-align: center;
+  padding: 8px 14px;
+}
+
+.horario .ayuda {
+  margin-top: 0;
+}
+
+.horario button {
+  width: 100%;
+}

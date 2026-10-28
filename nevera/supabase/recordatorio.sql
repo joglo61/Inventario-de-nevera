@@ -120,3 +120,57 @@ grant execute on function recordatorios_pendientes(text), borrar_suscripcion_ven
 --        timeout_milliseconds := 25000
 --      );
 --    $cron$);
+
+-- ---------- Parte 3: varios días y minuto exacto ----------
+alter table casas
+  add column if not exists recordatorio_dias smallint[] not null default '{}'
+    check (recordatorio_dias <@ array[0,1,2,3,4,5,6]::smallint[]),
+  add column if not exists recordatorio_minuto smallint not null default 0
+    check (recordatorio_minuto between 0 and 59);
+update casas set recordatorio_dias = array[recordatorio_dia] where recordatorio_dia is not null;
+grant select (recordatorio_dias, recordatorio_minuto) on casas to authenticated;
+grant update (recordatorio_dias, recordatorio_minuto) on casas to authenticated;
+
+-- Casas cuyo aviso toca en este minuto (hora de Colombia). La usan el reloj y recordatorios_pendientes.
+create or replace function casas_con_aviso_ahora()
+returns table (id uuid, nombre text)
+language sql stable security definer set search_path = public as $$
+  select c.id, c.nombre from casas c, (select now() at time zone 'America/Bogota' as t) a
+  where extract(dow from a.t)::smallint = any(c.recordatorio_dias)
+    and c.recordatorio_hora = extract(hour from a.t)::int
+    and c.recordatorio_minuto = extract(minute from a.t)::int;
+$$;
+revoke execute on function casas_con_aviso_ahora() from public, anon, authenticated;
+
+create or replace function recordatorios_pendientes(secreto text)
+returns table (endpoint text, clave_p256dh text, clave_auth text, casa text, lista text[])
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not secreto_cron_valido(secreto) then
+    raise exception 'No autorizado' using errcode = '28000';
+  end if;
+  return query
+    with casas_ahora as (select * from casas_con_aviso_ahora()),
+    listas as (
+      select p.casa_id,
+             array_agg(p.emoji || ' ' || p.nombre || coalesce(' · ' || p.nota, '') order by p.orden) as items
+      from productos p join casas_ahora ca on ca.id = p.casa_id
+      where p.agotado
+      group by p.casa_id
+    )
+    select s.endpoint, s.p256dh, s.auth, ca.nombre, l.items
+    from casas_ahora ca
+    join listas l on l.casa_id = ca.id
+    join miembros m on m.casa_id = ca.id and m.estado = 'activo' and m.recibe_recordatorio
+    join suscripciones s on s.user_id = m.user_id;
+end $$;
+
+-- El reloj revisa cada minuto y solo llama a Netlify si alguna casa tiene aviso en ese minuto.
+-- select cron.unschedule('recordatorio-semanal');
+-- select cron.schedule('recordatorio-semanal', '* * * * *', $cron$
+--   select net.http_post(... igual que en la Parte 2 ...)
+--   where exists (select 1 from casas_con_aviso_ahora());
+-- $cron$);
+-- select cron.schedule('limpiar-historial-cron', '0 4 * * *',
+--   $$delete from cron.job_run_details where end_time < now() - interval '3 days'$$);
+-- Después de publicar la app: alter table casas drop column recordatorio_dia;

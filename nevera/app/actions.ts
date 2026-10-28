@@ -190,19 +190,18 @@ export async function cambiarClave() {
 
 // ---------- Recordatorio semanal (ver supabase/recordatorio.sql) ----------
 
-// Día 0–6 (0 = domingo) y hora 0–23; día vacío = apagado. Las reglas RLS solo lo dejan a un dueño.
+// Días 0–6 (0 = domingo) y hora "HH:MM"; sin días = apagado (la hora se guarda igual).
+// Las reglas RLS solo lo dejan a un dueño.
 export async function guardarRecordatorio(fd: FormData) {
   const casa = await casaActual();
-  const dia = String(fd.get("dia") ?? "");
-  const hora = Number(fd.get("hora"));
-  const apagado = dia === "";
-  if (!apagado && !(Number.isInteger(Number(dia)) && Number.isInteger(hora))) volver("horario");
+  const dias = [...new Set(fd.getAll("dias").map(Number))].filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  const [hora, minuto] = String(fd.get("hora") ?? "").split(":").map(Number);
+  if (!(Number.isInteger(hora) && hora >= 0 && hora < 24 && Number.isInteger(minuto) && minuto >= 0 && minuto < 60)) {
+    volver("horario");
+  }
   await casa.sb
     .from("casas")
-    .update({
-      recordatorio_dia: apagado ? null : Number(dia),
-      recordatorio_hora: apagado ? null : hora,
-    })
+    .update({ recordatorio_dias: dias.sort(), recordatorio_hora: hora, recordatorio_minuto: minuto })
     .eq("id", casa.casaId);
   volver();
 }
