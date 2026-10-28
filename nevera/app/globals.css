@@ -1215,3 +1215,41 @@ code {
 .horario button {
   width: 100%;
 }
+
+/* Privacidad y términos */
+.legal h2 {
+  margin: 22px 0 8px;
+  font-size: 22px;
+}
+
+.legal p,
+.legal li {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.legal p + p {
+  margin-top: 8px;
+}
+
+.legal ul {
+  list-style: disc;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.legal a,
+.legal-pie a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.legal-pie {
+  margin-top: 24px;
+  max-width: 320px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--suave);
+  text-align: center;
+}

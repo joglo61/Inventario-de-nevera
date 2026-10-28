@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { entrar, type EstadoEntrar } from "./actions";
 import Captcha from "./captcha";
@@ -84,6 +85,10 @@ export default function Login({
         )}
         {estado.error && <p className="error">{estado.error}</p>}
       </form>
+      <p className="legal-pie">
+        Al entrar aceptas los <Link href="/terminos">términos de uso</Link> y la{" "}
+        <Link href="/privacidad">política de privacidad</Link>.
+      </p>
     </main>
   );
 }
